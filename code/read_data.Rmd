@@ -1,0 +1,48 @@
+---
+title: "read_data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#BiocManager::install("minfiData")
+```
+
+```{r}
+library(minfi)
+library(minfiData)
+```
+
+```{r}
+baseDir <- "../../../duomenys"
+files <- list.files(baseDir)
+files <- files[8:length(files)]
+
+temp0 <- c()
+for (i in 1:1){
+  if(substr(files[i], 28, nchar(files[i])) == "_Grn.idat"){
+    temp0[i] <- paste("../../../duomenys/", files[i], sep="")
+  }
+  
+}
+```
+
+```{r}
+targets <- read.csv("../input/GSE89181_samplekey.csv", as.is = TRUE)
+#names(targets)
+#targets$X.SAMPLE
+```
+
+```{r}
+temp <- c()
+for (i in 1:length(targets$X.SAMPLE)){
+  temp[i] <- paste("../../../duomenys/", targets$X.SAMPLE[i], sep="")
+}
+targets$X.SAMPLE <- temp
+#targets$X.SAMPLE <- file.path(baseDir, targets$X.SAMPLE)
+rgset <- read.metharray(files, verbose = TRUE)
+
+```
