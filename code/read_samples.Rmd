@@ -1,0 +1,148 @@
+---
+title: "read_data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# DUomenų nuskaitymas
+
+## Sample keys (mėginių raktų?) nuskaitymas
+
+```{r}
+# reading sample keys
+sk <- read.csv("../input/GSE89181_samplekey.csv")
+```
+
+```{r}
+# deleting columns that only has one value
+to_keep <- c()
+for(i in 1:length(sk[1,])) {
+  if (dim(table(sk[,i])) == 1){
+    to_keep[i] <- FALSE
+  }
+  else{
+    to_keep[i] <- TRUE
+  }
+}
+sk <- sk[, to_keep]
+```
+
+```{r}
+# renaming columns
+names(sk)[names(sk) == "X.SAMPLE"] <- "id"
+names(sk)[names(sk) == "geo_accession"] <- "geo_id"
+names(sk)[names(sk) == "characteristics_ch1"] <- "characteristics"
+```
+
+```{r}
+sk$characteristics
+```
+
+```{r}
+# dealing with characteristics
+run <- c()
+histology <- c()
+LGD <- c()
+gender <- c()
+bmi <- c()
+be_status <- c()
+smokecigarettes <- c()
+alcoholicrinksperweek <- c()
+for(i in 1:nrow(sk)) {
+  run[i] <- "NA"
+  histology[i] <- "NA"
+  LGD[i] <- "NA"
+  gender[i] <- "NA"
+  bmi[i] <- "NA"
+  be_status[i] <- "NA"
+  smokecigarettes[i] <- "NA"
+  alcoholicrinksperweek[i] <- "NA"
+  
+  row <- toString(sk$characteristics[i])
+  ##########################################
+  components <- strsplit(row,";")
+  ##########################################
+  for (comp in components){
+    comp <- toString(comp)
+    if(substr(comp, 0, 5) == "run: "){
+      run[i] <- substr(comp, 6, nchar(comp))
+    }
+    if(substr(comp, 0, 12) == " histology: "){
+      histology[i] <- substr(comp, 13, nchar(comp))
+    }
+    if(substr(comp, 0, 6) == " LGD: "){
+      LGD[i] <- substr(comp, 7, nchar(comp))
+    }
+    if(substr(comp, 0, 9) == " gender: "){
+      gender[i] <- substr(comp, 10, nchar(comp))
+    }
+    if(substr(comp, 0, 6) == " bmi: "){
+      bmi[i] <- substr(comp, 7, nchar(comp))
+    }
+    if(substr(comp, 0, 12) == " be status: "){
+      be_status[i] <- substr(comp, 13, nchar(comp))
+    }
+    if(substr(comp, 0, 18) == " smokecigarettes: "){
+      smokecigarettes[i] <- substr(comp, 19, nchar(comp))
+    }
+    if(substr(comp, 0, 24) == " alcoholicrinksperweek: "){
+      alcoholicrinksperweek[i] <- substr(comp, 25, nchar(comp))
+    }
+  }
+}
+```
+
+```{r}
+sk$run <- run
+sk$histology <- histology
+sk$LGD <- LGD
+sk$gender <- gender
+sk$bmi <- bmi
+sk$be_status <- be_status
+sk$smokecigarettes <- smokecigarettes
+sk$alcoholicrinksperweek <- alcoholicrinksperweek
+```
+
+```{r}
+sk$run
+```
+
+
+```{r}
+##################################### LOAD #####################################
+
+
+key <- read.csv("../input/GSE89181_samplekey.csv", sep="=", as.is=TRUE)
+
+key[,1] <- trimws(key[,1])
+key[,2] <- trimws(key[,2])
+
+################################### SEPARATE ###################################
+
+keys <- split(key, cumsum(key[,1]=="^SAMPLE"))
+
+###################### FUSE CHARACTERISTICS TO ONE FIELD #######################
+
+fixkey <- function(k) {
+  inds <- k[,1]=="!Sample_characteristics_ch1"
+  fields <- paste(k[inds,2], collapse="; ")
+  k <- k[!inds,]
+  k <- rbind(k, data.frame(V1="!Sample_characteristics_ch1", V2=fields))
+}
+
+keys <- Map(fixkey, keys)
+
+################################### MAKE KEY ###################################
+
+key <- do.call(rbind, keys)
+
+mat <- matrix(key[,2], nrow=length(keys), byrow=TRUE)
+colnames(mat) <- keys[[1]][,1]
+colnames(mat) <- sub("^!Sample_", "", colnames(mat))
+
+key <- as.data.frame(mat)
+```
+
