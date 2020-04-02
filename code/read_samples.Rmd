@@ -108,41 +108,8 @@ sk$alcoholicrinksperweek <- alcoholicrinksperweek
 
 ```{r}
 sk$run
+sk$Basename<-basename(as.character(sk$supplementary_file))
+sk$Basename<-sub("_Grn.idat.gz","",sk$Basename)
+sk$Basename<-file.path("../input",sk$Basename)
+sk$Basename
 ```
-
-
-```{r}
-##################################### LOAD #####################################
-
-
-key <- read.csv("../input/GSE89181_samplekey.csv", sep="=", as.is=TRUE)
-
-key[,1] <- trimws(key[,1])
-key[,2] <- trimws(key[,2])
-
-################################### SEPARATE ###################################
-
-keys <- split(key, cumsum(key[,1]=="^SAMPLE"))
-
-###################### FUSE CHARACTERISTICS TO ONE FIELD #######################
-
-fixkey <- function(k) {
-  inds <- k[,1]=="!Sample_characteristics_ch1"
-  fields <- paste(k[inds,2], collapse="; ")
-  k <- k[!inds,]
-  k <- rbind(k, data.frame(V1="!Sample_characteristics_ch1", V2=fields))
-}
-
-keys <- Map(fixkey, keys)
-
-################################### MAKE KEY ###################################
-
-key <- do.call(rbind, keys)
-
-mat <- matrix(key[,2], nrow=length(keys), byrow=TRUE)
-colnames(mat) <- keys[[1]][,1]
-colnames(mat) <- sub("^!Sample_", "", colnames(mat))
-
-key <- as.data.frame(mat)
-```
-
